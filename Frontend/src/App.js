@@ -115,7 +115,7 @@ const App = () => {
 
 
       const url = URL.createObjectURL(blob);
-      setAudioSrc([...audioSrc, url]);
+      setAudioSrc(url);
     }
   };
 
