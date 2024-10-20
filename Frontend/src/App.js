@@ -77,8 +77,9 @@ const App = () => {
         // When the recording stops
         mediaRecorder.onstop = () => {
           const blob = new Blob(chunks.current, { type: "audio/wav" });
-          // Send the audio blob to the API
           sendAudioToAPI(blob);
+          setIsRecording(false)
+          mediaRecorder.stop()
         };
 
         mediaRecorder.start();
@@ -120,6 +121,8 @@ const App = () => {
 
   const handleStory = () => {
     setisMainVisible(false)
+    const audio = new Audio(audioSrc)
+    audio.play()
   }
 
   const submitRequest = () => {
@@ -150,7 +153,11 @@ const App = () => {
         axios.post(BASE_API + "/gemini", { "message": res.data }).then((resGemi) => {
           setStoryText(resGemi.data);
           axios.post(BASE_API + "/lmnt", { "message": resGemi.data }).then((resLMNT) => {
-            decodeBase64Audio(resLMNT.data[0]); // Decode Base64 audio from response
+            for (let index = 0; index < resLMNT.data.length; index++) {
+              decodeBase64Audio(resLMNT.data[index]);
+            }
+            setreadyState(true)
+            handleStory()
             alert("Story Generated");
           }).catch(e => alert(e));
         });
@@ -181,7 +188,7 @@ const App = () => {
       } else {
         clearInterval(intervalId); // Clear interval when done
       }
-    }, typingSpeed);
+    }, []);
 
     return () => clearInterval(intervalId); // Clean up the interval on unmount
   }, []);
@@ -196,22 +203,21 @@ const App = () => {
             <h1 className="typing-text">{text}</h1>
           </div>
           <div className="greeting-page-container">
-            <h1>🎙️</h1>
+            <button className="mic-button" onClick={handleRecord}>
+              {isRecording ? '🎤' : '🎙️'} {/* Show different icon when recording */} </button>
             <input type="text" onChange={(e) => setInputText(e.target.value)} placeholder="Enter the story description" />
             <button onClick={submitRequest}>Submit</button>
           </div>
         </div>
       }
       {!isMainVisible &&
-          <div className="story-container">
+        <div className="story-container">
           <div className="story-partition">
             <div className="pictures-container">
               <img
                 src={images[currentImageIndex]}
                 alt={`Slide ${currentImageIndex}`}
                 style={{
-                  width: '100%',
-                  height: 'auto',
                   transition: 'opacity 1s ease-in-out',
                 }}
               />
@@ -223,7 +229,7 @@ const App = () => {
           <div className="input-section">
             <input
               type="text"
-              placeholder="Enter the Description"
+              placeholder="Enter the Description for new Story"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
             />
